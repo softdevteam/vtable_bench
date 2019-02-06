@@ -10,22 +10,29 @@
 #![feature(alloc_layout_extra)]
 #![feature(allocator_api)]
 
-use std::alloc::{alloc, Layout};
-use std::mem::{size_of, transmute};
-use std::time::Instant;
+use std::{
+    alloc::{alloc, Layout},
+    env,
+    mem::{size_of, transmute},
+    time::Instant
+};
 
-const ITERS: usize = 100;
-const VEC_SIZE: usize = 10000000;
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref ITERS: usize = env::args().nth(1).unwrap().parse().unwrap();
+    static ref VEC_SIZE: usize = env::args().nth(2).unwrap().parse().unwrap();
+}
 const VAL_NOREAD: usize = 0xdeadbeef;
 const VAL_WITHREAD: usize = 0xFEEDC0DE;
 
 #[inline(never)]
 fn time<F>(mut f: F)
 where
-    F: FnMut(),
+    F: FnMut()
 {
     let before = Instant::now();
-    for _ in 0..ITERS {
+    for _ in 0..*ITERS {
         f();
     }
     let d = Instant::now() - before;
@@ -48,7 +55,7 @@ trait New {
 // attribute (hence the leading underscore) whereas SWithRead does read from its "i" attribute
 // (hence the lack of a leading underscore).
 struct SNoRead {
-    _i: usize,
+    _i: usize
 }
 
 impl GetVal for SNoRead {
@@ -64,7 +71,7 @@ impl New for SNoRead {
 }
 
 struct SWithRead {
-    i: usize,
+    i: usize
 }
 
 impl GetVal for SWithRead {
@@ -80,8 +87,8 @@ impl New for SWithRead {
 }
 
 fn vec_normal<S: 'static + New + GetVal>() -> Vec<Box<dyn GetVal>> {
-    let mut v = Vec::<Box<dyn GetVal>>::with_capacity(VEC_SIZE);
-    for _ in 0..VEC_SIZE {
+    let mut v = Vec::<Box<dyn GetVal>>::with_capacity(*VEC_SIZE);
+    for _ in 0..*VEC_SIZE {
         v.push(Box::new(S::new()));
     }
     v
@@ -110,11 +117,13 @@ pub fn bench_normal_with_read() {
 }
 
 fn vec_multiref<S: 'static + New + GetVal>() -> Vec<*mut dyn GetVal> {
-    vec![Box::into_raw(Box::new(S::new())); VEC_SIZE]
+    vec![Box::into_raw(Box::new(S::new())); *VEC_SIZE]
 }
 
 fn clean_vec_multiref(v: Vec<*mut dyn GetVal>) {
-    unsafe { Box::from_raw(v[0]); }
+    unsafe {
+        Box::from_raw(v[0]);
+    }
 }
 
 pub fn bench_normal_multiref_no_read() {
@@ -144,7 +153,7 @@ pub fn bench_normal_multiref_with_read() {
 fn vec_vtable<S: 'static + New + GetVal>() -> Vec<*mut u8> {
     assert_eq!(size_of::<Box<()>>(), size_of::<usize>());
     assert_eq!(size_of::<Box<dyn GetVal>>(), size_of::<usize>() * 2);
-    let mut v = Vec::with_capacity(VEC_SIZE);
+    let mut v = Vec::with_capacity(*VEC_SIZE);
     // Since every instance of S will share the same vtable, it's OK for us to pull it out and
     // reuse it. With the coerce_unsized feature turned on, we can do this in a marginally cleverer
     // way, but the outcome is the same.
@@ -159,7 +168,7 @@ fn vec_vtable<S: 'static + New + GetVal>() -> Vec<*mut u8> {
     let (layout, _) = Layout::new::<usize>().extend(Layout::new::<S>()).unwrap();
     // The following assert ensure that the layout really is as we expect.
     assert_eq!(layout.size(), size_of::<usize>() + size_of::<S>());
-    for _ in 0..VEC_SIZE {
+    for _ in 0..*VEC_SIZE {
         let b = unsafe {
             let b: *mut usize = alloc(layout) as *mut usize;
             b.copy_from(&vtable, 1);
@@ -173,7 +182,9 @@ fn vec_vtable<S: 'static + New + GetVal>() -> Vec<*mut u8> {
 
 fn clean_vec_vtable(v: Vec<*mut u8>) {
     for e in v {
-        unsafe { Box::from_raw(e); }
+        unsafe {
+            Box::from_raw(e);
+        }
     }
 }
 
@@ -204,7 +215,7 @@ pub fn bench_alongside_with_read() {
 }
 
 fn vec_multiref_vtable<S: 'static + New + GetVal>() -> Vec<*mut u8> {
-    let mut v = Vec::with_capacity(VEC_SIZE);
+    let mut v = Vec::with_capacity(*VEC_SIZE);
     let vtable = {
         let b: *const dyn GetVal = Box::into_raw(Box::new(S::new()));
         let (_, vtable) = unsafe { transmute::<_, (usize, usize)>(b) };
@@ -222,14 +233,16 @@ fn vec_multiref_vtable<S: 'static + New + GetVal>() -> Vec<*mut u8> {
         let (ptr, _) = unsafe { transmute::<_, (*mut u8, usize)>(b) };
         ptr
     };
-    for _ in 0..VEC_SIZE {
+    for _ in 0..*VEC_SIZE {
         v.push(ptr);
     }
     v
 }
 
 fn clean_multiref_table(v: Vec<*mut u8>) {
-    unsafe { Box::from_raw(v[0]); }
+    unsafe {
+        Box::from_raw(v[0]);
+    }
 }
 
 pub fn bench_alongside_multiref_no_read() {

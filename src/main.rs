@@ -1,13 +1,19 @@
-use std::collections::HashMap;
-use std::fs::read_dir;
-use std::io::{self, Write};
-use std::process::Command;
+use std::{
+    collections::HashMap,
+    env,
+    fs::read_dir,
+    io::{self, stderr, Write},
+    path::Path,
+    process::{self, Command}
+};
 
-use rand::seq::SliceRandom;
-use rand::thread_rng;
+use getopts::Options;
+use rand::{seq::SliceRandom, thread_rng};
 use statistical::{mean, standard_deviation};
 
-const REPS: usize = 30;
+const REPS_DEFAULT: usize = 30;
+const ITERS_DEFAULT: usize = 100;
+const VEC_SIZE_DEFAULT: usize = 10000000;
 
 fn mean_ci(d: &Vec<f64>) -> (f64, f64) {
     let m = mean(d);
@@ -16,7 +22,48 @@ fn mean_ci(d: &Vec<f64>) -> (f64, f64) {
     (m, 2.58 * (sd / (d.len() as f64).sqrt()))
 }
 
+fn usage(prog: &str, msg: &str) -> ! {
+    let path = Path::new(prog);
+    let leaf = match path.file_name() {
+        Some(m) => m.to_str().unwrap(),
+        None => "vtable_bench"
+    };
+    if !msg.is_empty() {
+        writeln!(&mut stderr(), "{}", msg).ok();
+    }
+    writeln!(
+        &mut stderr(),
+        "Usage: {} [-h] [<#reps> <#iters> <#vec size>]",
+        leaf
+    )
+    .ok();
+    process::exit(1)
+}
+
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    let prog = &args[0];
+    let mut opts = Options::new();
+    opts.optflag("h", "help", "print this help menu");
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => m,
+        Err(f) => usage(prog, f.to_string().as_str())
+    };
+    if matches.opt_present("h") {
+        usage(&prog, "");
+    }
+    let (reps, iters, vec_size) = if matches.free.is_empty() {
+        (REPS_DEFAULT, ITERS_DEFAULT, VEC_SIZE_DEFAULT)
+    } else if matches.free.len() == 3 {
+        (
+            matches.free[0].parse().unwrap(),
+            matches.free[1].parse().unwrap(),
+            matches.free[2].parse().unwrap()
+        )
+    } else {
+        usage(&prog, "");
+    };
+
     let bmark_names = read_dir("src/bin/")
         .unwrap()
         .map(|x| {
@@ -35,16 +82,17 @@ fn main() {
     }
     let mut rng = thread_rng();
     let mut done = 0;
-    while done < bmark_names.len() * REPS {
+    while done < bmark_names.len() * reps {
         // Randomly select a benchmark to run next
         let bn = loop {
             let cnd = bmark_names.choose(&mut rng).unwrap();
-            if bmark_data[cnd].len() < REPS {
+            if bmark_data[cnd].len() < reps {
                 break cnd;
             }
         };
 
         let output = Command::new(format!("target/release/{}", bn))
+            .args(&[iters.to_string(), vec_size.to_string()])
             .output()
             .expect(&format!("Couldn't run {}", bn));
         let stdout = String::from_utf8_lossy(&output.stdout);
