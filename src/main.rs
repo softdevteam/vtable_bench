@@ -1,19 +1,19 @@
-use std::collections::HashMap;
-use std::env;
-use std::fs::read_dir;
-use std::io::{self, stderr, Write};
-use std::path::Path;
-use std::process::{self, Command};
+use std::{
+    collections::HashMap,
+    env,
+    fs::read_dir,
+    io::{self, stderr, Write},
+    path::Path,
+    process::{self, Command}
+};
 
 use getopts::Options;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::{seq::SliceRandom, thread_rng};
 use statistical::{mean, standard_deviation};
 
 const REPS_DEFAULT: usize = 30;
 const ITERS_DEFAULT: usize = 100;
 const VEC_SIZE_DEFAULT: usize = 10000000;
-
 
 fn mean_ci(d: &Vec<f64>) -> (f64, f64) {
     let m = mean(d);
@@ -46,8 +46,8 @@ fn main() {
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");
     let matches = match opts.parse(&args[1..]) {
-        Ok(m) => { m }
-        Err(f) => { usage(prog, f.to_string().as_str()) }
+        Ok(m) => m,
+        Err(f) => usage(prog, f.to_string().as_str())
     };
     if matches.opt_present("h") {
         usage(&prog, "");
@@ -55,7 +55,11 @@ fn main() {
     let (reps, iters, vec_size) = if matches.free.is_empty() {
         (REPS_DEFAULT, ITERS_DEFAULT, VEC_SIZE_DEFAULT)
     } else if matches.free.len() == 3 {
-        (matches.free[0].parse().unwrap(), matches.free[1].parse().unwrap(), matches.free[2].parse().unwrap())
+        (
+            matches.free[0].parse().unwrap(),
+            matches.free[1].parse().unwrap(),
+            matches.free[2].parse().unwrap()
+        )
     } else {
         usage(&prog, "");
     };

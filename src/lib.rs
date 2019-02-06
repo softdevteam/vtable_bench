@@ -10,10 +10,12 @@
 #![feature(alloc_layout_extra)]
 #![feature(allocator_api)]
 
-use std::alloc::{alloc, Layout};
-use std::env;
-use std::mem::{size_of, transmute};
-use std::time::Instant;
+use std::{
+    alloc::{alloc, Layout},
+    env,
+    mem::{size_of, transmute},
+    time::Instant
+};
 
 use lazy_static::lazy_static;
 
@@ -27,7 +29,7 @@ const VAL_WITHREAD: usize = 0xFEEDC0DE;
 #[inline(never)]
 fn time<F>(mut f: F)
 where
-    F: FnMut(),
+    F: FnMut()
 {
     let before = Instant::now();
     for _ in 0..*ITERS {
@@ -53,7 +55,7 @@ trait New {
 // attribute (hence the leading underscore) whereas SWithRead does read from its "i" attribute
 // (hence the lack of a leading underscore).
 struct SNoRead {
-    _i: usize,
+    _i: usize
 }
 
 impl GetVal for SNoRead {
@@ -69,7 +71,7 @@ impl New for SNoRead {
 }
 
 struct SWithRead {
-    i: usize,
+    i: usize
 }
 
 impl GetVal for SWithRead {
@@ -119,7 +121,9 @@ fn vec_multiref<S: 'static + New + GetVal>() -> Vec<*mut dyn GetVal> {
 }
 
 fn clean_vec_multiref(v: Vec<*mut dyn GetVal>) {
-    unsafe { Box::from_raw(v[0]); }
+    unsafe {
+        Box::from_raw(v[0]);
+    }
 }
 
 pub fn bench_normal_multiref_no_read() {
@@ -178,7 +182,9 @@ fn vec_vtable<S: 'static + New + GetVal>() -> Vec<*mut u8> {
 
 fn clean_vec_vtable(v: Vec<*mut u8>) {
     for e in v {
-        unsafe { Box::from_raw(e); }
+        unsafe {
+            Box::from_raw(e);
+        }
     }
 }
 
@@ -234,7 +240,9 @@ fn vec_multiref_vtable<S: 'static + New + GetVal>() -> Vec<*mut u8> {
 }
 
 fn clean_multiref_table(v: Vec<*mut u8>) {
-    unsafe { Box::from_raw(v[0]); }
+    unsafe {
+        Box::from_raw(v[0]);
+    }
 }
 
 pub fn bench_alongside_multiref_no_read() {
