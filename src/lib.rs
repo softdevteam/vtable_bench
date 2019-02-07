@@ -209,25 +209,19 @@ pub fn bench_innervtable_with_read() {
 }
 
 fn vec_multialias_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
-    let mut v = Vec::with_capacity(*VEC_SIZE);
     let ptr = {
         let (layout, _) = Layout::new::<usize>().extend(Layout::new::<S>()).unwrap();
         assert_eq!(layout.size(), size_of::<usize>() + size_of::<S>());
         let s = S::new();
-        let b = unsafe {
+        unsafe {
             let (_, vtable) = transmute::<&dyn GetVal, (usize, usize)>(&s);
             let b = alloc(layout) as *mut usize;
             b.copy_from(&vtable, 1);
             (b.add(1) as *mut S).copy_from(&s, 1);
-            b as *mut S as *mut dyn GetVal
-        };
-        let (ptr, _) = unsafe { transmute::<_, (*mut (), usize)>(b) };
-        ptr
+            b as *mut ()
+        }
     };
-    for _ in 0..*VEC_SIZE {
-        v.push(ptr);
-    }
-    v
+    vec![ptr; *VEC_SIZE]
 }
 
 fn clean_multialias_table(v: Vec<*mut ()>) {
