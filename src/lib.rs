@@ -164,7 +164,7 @@ fn vec_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
         let s = S::new();
         let b = unsafe {
             let (_, vtable) = transmute::<&dyn GetVal, (usize, usize)>(&s);
-            let b: *mut usize = alloc(layout) as *mut usize;
+            let b = alloc(layout) as *mut usize;
             b.copy_from(&vtable, 1);
             (b.add(1) as *mut S).copy_from(&s, 1);
             b as *mut ()
@@ -216,7 +216,7 @@ fn vec_multialias_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
         let s = S::new();
         let b = unsafe {
             let (_, vtable) = transmute::<&dyn GetVal, (usize, usize)>(&s);
-            let b: *mut usize = alloc(layout) as *mut usize;
+            let b = alloc(layout) as *mut usize;
             b.copy_from(&vtable, 1);
             (b.add(1) as *mut S).copy_from(&s, 1);
             b as *mut S as *mut dyn GetVal
