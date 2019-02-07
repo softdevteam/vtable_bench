@@ -2,7 +2,8 @@
 
 This is a series of benchmarks designed to give some understanding of how
 performance in Rust programs depending on whether the vtable pointer is stored
-alongside the normal pointer (a "fat pointer") or next to the object itself.
+alongside the normal pointer (a "fat pointer") or next to the object itself
+("inner vtable pointers").
 
 You can perform a run with default values as follows:
 
@@ -28,12 +29,12 @@ nothing, however.
 Each benchmark creates one or more trait objects, puts them in a vector, and
 then iterates over that vector calling a method:
 
-* The `normal` benchmarks use fat pointers and the `alongside` benchmarks store
+* The `fat` benchmarks use fat pointers and the `innervtable` benchmarks store
   the vtable alongside the data itself (recreating fat pointers on an as-needed
   basis).
 
-* The `multiref` benchmarks allocate a single box and multiply alias it;
-  non-`multiref` benchmarks allocate multiple boxes without aliasing.
+* The `multialias` benchmarks allocate a single box and multiply alias it;
+  non-`multialias` benchmarks allocate multiple boxes without aliasing.
 
 * The `no_read` benchmarks do not read from self (they return a fixed integer);
   `with_read` benchmarks do read from self. This is trying to understand whether
@@ -66,39 +67,39 @@ easier).
 
 ```
 $ cargo run --release --bin vtable_bench 30 10000 100000
-bench_alongside_multiref_no_read: 1.627 +/- 0.0002
-bench_alongside_multiref_with_read: 1.631 +/- 0.0100
-bench_alongside_no_read: 1.483 +/- 0.0040
-bench_alongside_with_read: 1.536 +/- 0.0043
-bench_normal_multiref_no_read: 1.629 +/- 0.0049
-bench_normal_multiref_with_read: 1.627 +/- 0.0007
-bench_normal_no_read: 1.628 +/- 0.0015
-bench_normal_with_read: 1.669 +/- 0.0051
+bench_innervtable_multialias_no_read: 1.627 +/- 0.0002
+bench_innervtable_multialias_with_read: 1.631 +/- 0.0100
+bench_innervtable_no_read: 1.483 +/- 0.0040
+bench_innervtable_with_read: 1.536 +/- 0.0043
+bench_fat_multialias_no_read: 1.629 +/- 0.0049
+bench_fat_multialias_with_read: 1.627 +/- 0.0007
+bench_fat_no_read: 1.628 +/- 0.0015
+bench_fat_with_read: 1.669 +/- 0.0051
 $ cargo run --release --bin vtable_bench 30 1000 1000000
-bench_alongside_multiref_no_read: 1.649 +/- 0.0198
-bench_alongside_multiref_with_read: 1.644 +/- 0.0104
-bench_alongside_no_read: 2.063 +/- 0.0086
-bench_alongside_with_read: 2.098 +/- 0.0123
-bench_normal_multiref_no_read: 1.704 +/- 0.0053
-bench_normal_multiref_with_read: 1.700 +/- 0.0007
-bench_normal_no_read: 1.707 +/- 0.0131
-bench_normal_with_read: 2.188 +/- 0.0125
+bench_innervtable_multialias_no_read: 1.649 +/- 0.0198
+bench_innervtable_multialias_with_read: 1.644 +/- 0.0104
+bench_innervtable_no_read: 2.063 +/- 0.0086
+bench_innervtable_with_read: 2.098 +/- 0.0123
+bench_fat_multialias_no_read: 1.704 +/- 0.0053
+bench_fat_multialias_with_read: 1.700 +/- 0.0007
+bench_fat_no_read: 1.707 +/- 0.0131
+bench_fat_with_read: 2.188 +/- 0.0125
 $ cargo run --release --bin vtable_bench 30 100 10000000
-bench_alongside_multiref_no_read: 1.666 +/- 0.0082
-bench_alongside_multiref_with_read: 1.666 +/- 0.0121
-bench_alongside_no_read: 2.077 +/- 0.0205
-bench_alongside_with_read: 2.100 +/- 0.0126
-bench_normal_multiref_no_read: 1.699 +/- 0.0014
-bench_normal_multiref_with_read: 1.702 +/- 0.0061
-bench_normal_no_read: 1.698 +/- 0.0059
-bench_normal_with_read: 2.184 +/- 0.0059
+bench_innervtable_multialias_no_read: 1.666 +/- 0.0082
+bench_innervtable_multialias_with_read: 1.666 +/- 0.0121
+bench_innervtable_no_read: 2.077 +/- 0.0205
+bench_innervtable_with_read: 2.100 +/- 0.0126
+bench_fat_multialias_no_read: 1.699 +/- 0.0014
+bench_fat_multialias_with_read: 1.702 +/- 0.0061
+bench_fat_no_read: 1.698 +/- 0.0059
+bench_fat_with_read: 2.184 +/- 0.0059
 $ cargo run --release --bin vtable_bench 30 10 100000000
-bench_alongside_multiref_no_read: 1.663 +/- 0.0082
-bench_alongside_multiref_with_read: 1.672 +/- 0.0230
-bench_alongside_no_read: 2.076 +/- 0.0141
-bench_alongside_with_read: 2.112 +/- 0.0160
-bench_normal_multiref_no_read: 1.709 +/- 0.0115
-bench_normal_multiref_with_read: 1.701 +/- 0.0025
-bench_normal_no_read: 1.702 +/- 0.0012
-bench_normal_with_read: 2.196 +/- 0.0065
+bench_innervtable_multialias_no_read: 1.663 +/- 0.0082
+bench_innervtable_multialias_with_read: 1.672 +/- 0.0230
+bench_innervtable_no_read: 2.076 +/- 0.0141
+bench_innervtable_with_read: 2.112 +/- 0.0160
+bench_fat_multialias_no_read: 1.709 +/- 0.0115
+bench_fat_multialias_with_read: 1.701 +/- 0.0025
+bench_fat_no_read: 1.702 +/- 0.0012
+bench_fat_with_read: 2.196 +/- 0.0065
 ```

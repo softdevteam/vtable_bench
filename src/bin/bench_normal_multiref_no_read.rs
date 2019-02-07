@@ -1,3 +1,3 @@
 fn main() {
-    vtable_bench::bench_normal_multiref_no_read();
+    vtable_bench::bench_fat_multialias_no_read();
 }

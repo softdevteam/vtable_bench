@@ -1,3 +1,3 @@
 fn main() {
-    vtable_bench::bench_normal_with_read();
+    vtable_bench::bench_fat_with_read();
 }
