@@ -150,7 +150,7 @@ pub fn bench_normal_multiref_with_read() {
     clean_vec_multiref(v);
 }
 
-fn vec_vtable<S: 'static + New + GetVal>() -> Vec<*mut u8> {
+fn vec_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
     assert_eq!(size_of::<Box<()>>(), size_of::<usize>());
     assert_eq!(size_of::<Box<dyn GetVal>>(), size_of::<usize>() * 2);
     let mut v = Vec::with_capacity(*VEC_SIZE);
@@ -173,14 +173,14 @@ fn vec_vtable<S: 'static + New + GetVal>() -> Vec<*mut u8> {
             let b: *mut usize = alloc(layout) as *mut usize;
             b.copy_from(&vtable, 1);
             (b.add(1) as *mut S).copy_from(&S::new(), 1);
-            b as *mut u8
+            b as *mut ()
         };
         v.push(b);
     }
     v
 }
 
-fn clean_vec_vtable(v: Vec<*mut u8>) {
+fn clean_vec_vtable(v: Vec<*mut ()>) {
     for e in v {
         unsafe {
             Box::from_raw(e);
@@ -214,7 +214,7 @@ pub fn bench_alongside_with_read() {
     clean_vec_vtable(v);
 }
 
-fn vec_multiref_vtable<S: 'static + New + GetVal>() -> Vec<*mut u8> {
+fn vec_multiref_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
     let mut v = Vec::with_capacity(*VEC_SIZE);
     let vtable = {
         let b: *const dyn GetVal = Box::into_raw(Box::new(S::new()));
@@ -230,7 +230,7 @@ fn vec_multiref_vtable<S: 'static + New + GetVal>() -> Vec<*mut u8> {
             (b.add(1) as *mut S).copy_from(&S::new(), 1);
             b as *mut S as *mut dyn GetVal
         };
-        let (ptr, _) = unsafe { transmute::<_, (*mut u8, usize)>(b) };
+        let (ptr, _) = unsafe { transmute::<_, (*mut (), usize)>(b) };
         ptr
     };
     for _ in 0..*VEC_SIZE {
@@ -239,7 +239,7 @@ fn vec_multiref_vtable<S: 'static + New + GetVal>() -> Vec<*mut u8> {
     v
 }
 
-fn clean_multiref_table(v: Vec<*mut u8>) {
+fn clean_multiref_table(v: Vec<*mut ()>) {
     unsafe {
         Box::from_raw(v[0]);
     }
