@@ -154,15 +154,6 @@ fn vec_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
     assert_eq!(size_of::<Box<()>>(), size_of::<usize>());
     assert_eq!(size_of::<Box<dyn GetVal>>(), size_of::<usize>() * 2);
     let mut v = Vec::with_capacity(*VEC_SIZE);
-    // Since every instance of S will share the same vtable, it's OK for us to pull it out and
-    // reuse it. With the coerce_unsized feature turned on, we can do this in a marginally cleverer
-    // way, but the outcome is the same.
-    let vtable = {
-        let s = S::new();
-        let b: &dyn GetVal = &s;
-        let (_, vtable) = unsafe { transmute::<_, (usize, usize)>(b) };
-        vtable
-    };
     // We're going to lay out memory (on a 64-bit machine) as:
     //   offset 0: vtable
     //          8: S
@@ -170,10 +161,12 @@ fn vec_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
     // The following assert ensure that the layout really is as we expect.
     assert_eq!(layout.size(), size_of::<usize>() + size_of::<S>());
     for _ in 0..*VEC_SIZE {
+        let s = S::new();
         let b = unsafe {
+            let (_, vtable) = transmute::<&dyn GetVal, (usize, usize)>(&s);
             let b: *mut usize = alloc(layout) as *mut usize;
             b.copy_from(&vtable, 1);
-            (b.add(1) as *mut S).copy_from(&S::new(), 1);
+            (b.add(1) as *mut S).copy_from(&s, 1);
             b as *mut ()
         };
         v.push(b);
@@ -217,19 +210,15 @@ pub fn bench_innervtable_with_read() {
 
 fn vec_multialias_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
     let mut v = Vec::with_capacity(*VEC_SIZE);
-    let vtable = {
-        let s = S::new();
-        let b: &dyn GetVal = &s;
-        let (_, vtable) = unsafe { transmute::<_, (usize, usize)>(b) };
-        vtable
-    };
     let ptr = {
         let (layout, _) = Layout::new::<usize>().extend(Layout::new::<S>()).unwrap();
         assert_eq!(layout.size(), size_of::<usize>() + size_of::<S>());
+        let s = S::new();
         let b = unsafe {
+            let (_, vtable) = transmute::<&dyn GetVal, (usize, usize)>(&s);
             let b: *mut usize = alloc(layout) as *mut usize;
             b.copy_from(&vtable, 1);
-            (b.add(1) as *mut S).copy_from(&S::new(), 1);
+            (b.add(1) as *mut S).copy_from(&s, 1);
             b as *mut S as *mut dyn GetVal
         };
         let (ptr, _) = unsafe { transmute::<_, (*mut (), usize)>(b) };
