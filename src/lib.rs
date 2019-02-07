@@ -116,38 +116,38 @@ pub fn bench_fat_with_read() {
     });
 }
 
-fn vec_multiref<S: 'static + New + GetVal>() -> Vec<*mut dyn GetVal> {
+fn vec_multialias<S: 'static + New + GetVal>() -> Vec<*mut dyn GetVal> {
     vec![Box::into_raw(Box::new(S::new())); *VEC_SIZE]
 }
 
-fn clean_vec_multiref(v: Vec<*mut dyn GetVal>) {
+fn clean_vec_multialias(v: Vec<*mut dyn GetVal>) {
     unsafe {
         Box::from_raw(v[0]);
     }
 }
 
-pub fn bench_fat_multiref_no_read() {
+pub fn bench_fat_multialias_no_read() {
     assert_eq!(size_of::<Box<()>>(), size_of::<usize>());
     assert_eq!(size_of::<Box<dyn GetVal>>(), size_of::<usize>() * 2);
-    let v = vec_multiref::<SNoRead>();
+    let v = vec_multialias::<SNoRead>();
     time(|| {
         for &e in &v {
             assert_eq!(unsafe { (&*e).val() }, VAL_NOREAD);
         }
     });
-    clean_vec_multiref(v);
+    clean_vec_multialias(v);
 }
 
-pub fn bench_fat_multiref_with_read() {
+pub fn bench_fat_multialias_with_read() {
     assert_eq!(size_of::<Box<()>>(), size_of::<usize>());
     assert_eq!(size_of::<Box<dyn GetVal>>(), size_of::<usize>() * 2);
-    let v = vec_multiref::<SWithRead>();
+    let v = vec_multialias::<SWithRead>();
     time(|| {
         for &e in &v {
             assert_eq!(unsafe { (&*e).val() }, VAL_WITHREAD);
         }
     });
-    clean_vec_multiref(v);
+    clean_vec_multialias(v);
 }
 
 fn vec_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
@@ -214,7 +214,7 @@ pub fn bench_innervtable_with_read() {
     clean_vec_vtable(v);
 }
 
-fn vec_multiref_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
+fn vec_multialias_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
     let mut v = Vec::with_capacity(*VEC_SIZE);
     let vtable = {
         let b: *const dyn GetVal = Box::into_raw(Box::new(S::new()));
@@ -239,14 +239,14 @@ fn vec_multiref_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
     v
 }
 
-fn clean_multiref_table(v: Vec<*mut ()>) {
+fn clean_multialias_table(v: Vec<*mut ()>) {
     unsafe {
         Box::from_raw(v[0]);
     }
 }
 
-pub fn bench_innervtable_multiref_no_read() {
-    let v = vec_multiref_vtable::<SNoRead>();
+pub fn bench_innervtable_multialias_no_read() {
+    let v = vec_multialias_vtable::<SNoRead>();
     time(|| {
         for &e in &v {
             let vtable = unsafe { *(e as *const usize) };
@@ -255,11 +255,11 @@ pub fn bench_innervtable_multiref_no_read() {
             assert_eq!(unsafe { (&*b).val() }, VAL_NOREAD);
         }
     });
-    clean_multiref_table(v);
+    clean_multialias_table(v);
 }
 
-pub fn bench_innervtable_multiref_with_read() {
-    let v = vec_multiref_vtable::<SWithRead>();
+pub fn bench_innervtable_multialias_with_read() {
+    let v = vec_multialias_vtable::<SWithRead>();
     time(|| {
         for &e in &v {
             let vtable = unsafe { *(e as *const usize) };
@@ -268,5 +268,5 @@ pub fn bench_innervtable_multiref_with_read() {
             assert_eq!(unsafe { (&*b).val() }, VAL_WITHREAD);
         }
     });
-    clean_multiref_table(v);
+    clean_multialias_table(v);
 }

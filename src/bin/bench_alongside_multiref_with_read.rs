@@ -1,3 +1,3 @@
 fn main() {
-    vtable_bench::bench_innervtable_multiref_with_read();
+    vtable_bench::bench_innervtable_multialias_with_read();
 }
