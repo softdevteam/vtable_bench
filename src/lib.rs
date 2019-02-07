@@ -158,7 +158,8 @@ fn vec_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
     // reuse it. With the coerce_unsized feature turned on, we can do this in a marginally cleverer
     // way, but the outcome is the same.
     let vtable = {
-        let b: *const dyn GetVal = Box::into_raw(Box::new(S::new()));
+        let s = S::new();
+        let b: &dyn GetVal = &s;
         let (_, vtable) = unsafe { transmute::<_, (usize, usize)>(b) };
         vtable
     };
@@ -217,7 +218,8 @@ pub fn bench_innervtable_with_read() {
 fn vec_multialias_vtable<S: 'static + New + GetVal>() -> Vec<*mut ()> {
     let mut v = Vec::with_capacity(*VEC_SIZE);
     let vtable = {
-        let b: *const dyn GetVal = Box::into_raw(Box::new(S::new()));
+        let s = S::new();
+        let b: &dyn GetVal = &s;
         let (_, vtable) = unsafe { transmute::<_, (usize, usize)>(b) };
         vtable
     };
