@@ -94,7 +94,7 @@ fn vec_normal<S: 'static + New + GetVal>() -> Vec<Box<dyn GetVal>> {
     v
 }
 
-pub fn bench_normal_no_read() {
+pub fn bench_fat_no_read() {
     assert_eq!(size_of::<Box<()>>(), size_of::<usize>());
     assert_eq!(size_of::<Box<dyn GetVal>>(), size_of::<usize>() * 2);
     let v = vec_normal::<SNoRead>();
@@ -105,7 +105,7 @@ pub fn bench_normal_no_read() {
     });
 }
 
-pub fn bench_normal_with_read() {
+pub fn bench_fat_with_read() {
     assert_eq!(size_of::<Box<()>>(), size_of::<usize>());
     assert_eq!(size_of::<Box<dyn GetVal>>(), size_of::<usize>() * 2);
     let v = vec_normal::<SWithRead>();
@@ -126,7 +126,7 @@ fn clean_vec_multiref(v: Vec<*mut dyn GetVal>) {
     }
 }
 
-pub fn bench_normal_multiref_no_read() {
+pub fn bench_fat_multiref_no_read() {
     assert_eq!(size_of::<Box<()>>(), size_of::<usize>());
     assert_eq!(size_of::<Box<dyn GetVal>>(), size_of::<usize>() * 2);
     let v = vec_multiref::<SNoRead>();
@@ -138,7 +138,7 @@ pub fn bench_normal_multiref_no_read() {
     clean_vec_multiref(v);
 }
 
-pub fn bench_normal_multiref_with_read() {
+pub fn bench_fat_multiref_with_read() {
     assert_eq!(size_of::<Box<()>>(), size_of::<usize>());
     assert_eq!(size_of::<Box<dyn GetVal>>(), size_of::<usize>() * 2);
     let v = vec_multiref::<SWithRead>();
