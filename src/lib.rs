@@ -182,7 +182,7 @@ fn clean_vec_vtable(v: Vec<*mut ()>) {
     }
 }
 
-pub fn bench_innervtable_no_read() {
+pub fn bench_innervpointer_no_read() {
     let v = vec_vtable::<SNoRead>();
     time(|| {
         for &e in &v {
@@ -195,7 +195,7 @@ pub fn bench_innervtable_no_read() {
     clean_vec_vtable(v);
 }
 
-pub fn bench_innervtable_with_read() {
+pub fn bench_innervpointer_with_read() {
     let v = vec_vtable::<SWithRead>();
     time(|| {
         for &e in &v {
@@ -230,7 +230,7 @@ fn clean_multialias_table(v: Vec<*mut ()>) {
     }
 }
 
-pub fn bench_innervtable_multialias_no_read() {
+pub fn bench_innervpointer_multialias_no_read() {
     let v = vec_multialias_vtable::<SNoRead>();
     time(|| {
         for &e in &v {
@@ -243,7 +243,7 @@ pub fn bench_innervtable_multialias_no_read() {
     clean_multialias_table(v);
 }
 
-pub fn bench_innervtable_multialias_with_read() {
+pub fn bench_innervpointer_multialias_with_read() {
     let v = vec_multialias_vtable::<SWithRead>();
     time(|| {
         for &e in &v {
